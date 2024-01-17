@@ -2,6 +2,7 @@ import functools
 import itertools
 import logging
 import operator
+import traceback
 from collections import Counter, defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -46,6 +47,7 @@ from ..pattern_matcher import (
 from ..utils import decode_device, is_pointwise_use
 from ..virtualized import V
 from .group_batch_fusion import group_batch_fusion_passes
+from .numeric_utils import run_model
 
 log = logging.getLogger(__name__)
 aten = torch.ops.aten
@@ -61,7 +63,7 @@ pass_patterns = [
 inference_patterns = PatternMatcherPass()
 
 
-def post_grad_passes(gm: torch.fx.GraphModule, is_inference: bool):
+def post_grad_passes(gm: torch.fx.GraphModule, is_inference: bool, example_inputs):
     """
     Passes that run on after grad.  This is called once on the forwards
     graph and once on the backwards graph.
@@ -82,17 +84,58 @@ def post_grad_passes(gm: torch.fx.GraphModule, is_inference: bool):
 
     if config.pattern_matcher:
         lazy_init()
-
+        if config.runtime_numeric_check["enable"]:
+            pre_optimus = gm.__copy__()
         print_graph(gm.graph, "Before group batch fusion in post grad pass.")
         group_batch_fusion_passes(gm.graph, pre_grad=False)
         print_graph(gm.graph, "After group batch fusion in post grad pass.")
+        if config.runtime_numeric_check["enable"]:
+            # need to topo-sort graphmodule before we run the model,
+            # otherwise it may fail as refer before def
+            stable_topological_sort(gm.graph)
+            post_optimus = gm.__copy__()
+            # fail silently in order not to block the model run
+            try:
+                model_inputs = []
+                for example_input in example_inputs:
+                    # convert to real tensor
+                    device, shape, dtype, requires_grad = (
+                        example_input.device,
+                        example_input.shape,
+                        example_input.dtype,
+                        example_input.requires_grad,
+                    )
+                    if "float" in str(dtype).lower():
+                        model_input = torch.randn(shape, device=device, dtype=dtype)
+                    elif "int" in str(dtype).lower():
+                        model_input = torch.randint(1, 10, shape, device=device, dtype=dtype)
+                    elif "bool" in str(dtype).lower():
+                        model_input = torch.randint(0, 2, shape, device=device, dtype=dtype).bool()
+                    else:
+                        raise NotImplementedError("dtype %s is not supported.", dtype)
+                    model_inputs.append(model_input)
+                    model_input = model_input.requires_grad_(requires_grad)
+                # After we run aot_autograd, we create backward graph, and the gradient_fn is not needed.
+                # And the gradients are the graph output, see the following doc for details
+                # https://pytorch.org/functorch/stable/notebooks/aot_autograd_optimizations.html
+                run_model(
+                    pre_optimus,
+                    post_optimus,
+                    model_inputs,
+                    num_iteration=config.runtime_numeric_check["num_iterations"],
+                    precision=config.runtime_numeric_check["precision"],
+                )
+            except Exception as e:
+                log.warning(
+                    "Runtime numeric check failed in post grad pass with error: %s", {e}
+                )
+                traceback.print_exc()
         remove_noop_ops(gm.graph)
-        print_graph(gm.graph, "Before split cat in post grad pass.")
         for patterns in pass_patterns:
             patterns.apply(gm.graph)
             print_graph(
                 gm.graph,
-                "Apply split cat pattern matcher PatternMatcherPass in post grad.",
+                "Apply pattern matcher PatternMatcherPass in post grad.",
             )
         if is_inference:
             inference_patterns.apply(gm.graph)
