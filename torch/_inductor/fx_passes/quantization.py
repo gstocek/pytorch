@@ -1518,8 +1518,8 @@ def _is_valid_dequant_linear_pattern(dtype, input_dim_exceeds_two, input_contigu
                 and len(qweight_node.meta["val"].size()) == 2
                 and len(wgt_expand_size) == 3
                 and wgt_expand_size[0] == act_node.meta["val"].size()[0]
-                and wgt_expand_size[1] == qweight_node.meta["val"].size()[0]
-                and wgt_expand_size[2] == qweight_node.meta["val"].size()[1]
+                and wgt_expand_size[1] == qweight_node.meta["val"].size()[1]
+                and wgt_expand_size[2] == qweight_node.meta["val"].size()[0]
             ):
                 return False
 
