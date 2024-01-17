@@ -1067,6 +1067,9 @@ class Kernel(CodeGen):
     def scan(self, dtype, combine_fn, value, init):
         raise NotImplementedError()
 
+    def vectorized_random(self, seed, offset, mode):
+        raise NotImplementedError()
+
     def bucketize(
         self,
         values,
@@ -1212,6 +1215,10 @@ class Kernel(CodeGen):
             @staticmethod
             def scan(dtype, combine_fn, value, init):
                 return self.scan(dtype, combine_fn, value, init)
+
+            @staticmethod
+            def vectorized_random(seed, offset, mode):
+                return self.vectorized_random(seed, offset, mode)
 
             @staticmethod
             def bucketize(
