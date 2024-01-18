@@ -26,6 +26,7 @@ from torch.testing._internal.common_utils import (
     TEST_WITH_ASAN,
     TEST_WITH_ROCM,
     TestCase as TorchTestCase,
+    requires_cuda,
 )
 
 if IS_WINDOWS and IS_CI:
@@ -45,7 +46,6 @@ from torch.testing._internal.inductor_utils import HAS_CPU, HAS_CUDA
 
 aten = torch.ops.aten
 prims = torch.ops.prims
-requires_cuda = functools.partial(unittest.skipIf, not HAS_CUDA, "requires cuda")
 
 
 class TestCase(TorchTestCase):
@@ -285,7 +285,7 @@ class OptimizeForInferenceTemplate(TestCase):
             torch._dynamo.mark_dynamic(inp2, 1)
             self.assertEqual(fn(inp2), fn_opt(inp2))
 
-    @requires_cuda()
+    @requires_cuda
     def test_conv_multiple_uses(self):
         from torch import nn
 
