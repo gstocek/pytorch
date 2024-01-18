@@ -97,6 +97,11 @@ class PlacementVariable(DistributedVariable):
     def as_python_constant(self):
         return self.value
 
+    def var_getattr(self, tx, name: str) -> VariableTracker:
+        if name == "dim":
+            return ConstantVariable.create(self.value.dim)
+        return super().var_getattr(tx, name)
+
     def call_method(
         self,
         tx,
@@ -106,9 +111,15 @@ class PlacementVariable(DistributedVariable):
     ) -> "VariableTracker":
         from . import ConstantVariable
 
-        allowed_methods = ["__init__", "__setattr__"]
-        # placement types dynamo tracking allows only __init__
-        # and __setattr__ methods, the latter is for case like `Shard(dim)`
+        allowed_methods = [
+            "__init__",
+            "__setattr__",
+            "is_shard",
+            "is_partial",
+            "is_replicate",
+        ]
+        # placement types dynamo tracking only allows above methods
+        # and __setattr__  is for case like `Shard(dim)`
         if name in allowed_methods:
             try:
                 value_type = type(self.value)
