@@ -4,7 +4,7 @@ from typing import Dict, List
 import torch
 from .. import variables
 from ..exc import unimplemented
-from ..utils import istype
+from ..utils import guard_if_dyn, istype
 from .base import VariableTracker
 from .constant import ConstantVariable
 
@@ -151,6 +151,42 @@ class DeviceMeshVariable(DistributedVariable):
         if name == "ndim":
             return ConstantVariable.create(self.value.ndim)
         return super().var_getattr(tx, name)
+
+    def call_method(
+        self,
+        tx,
+        name,
+        args: "List[VariableTracker]",
+        kwargs: "Dict[str, VariableTracker]",
+    ) -> "VariableTracker":
+        if name == "size":
+            mesh_dim_var = None
+            if "mesh_dim" in kwargs:
+                mesh_dim_var = kwargs["mesh_dim"]
+            elif len(args) == 1:
+                mesh_dim_var = args[0]
+            elif len(args) == 0:
+                mesh_dim_var = None
+            else:
+                assert (
+                    not args and not kwargs
+                ), f"DeviceMesh.{name}() unhandled args/kwargs"
+
+            if mesh_dim_var is None:
+                return ConstantVariable.create(self.value.mesh.numel())
+            else:
+                dim = guard_if_dyn(mesh_dim_var)
+                return ConstantVariable.create(self.value.mesh.size(dim))
+        elif name == "get_coordinate":
+            coord = self.value.get_coordinate()
+            if coord is None:
+                return ConstantVariable.create(None)
+            else:
+                return ConstantVariable.create(coord)
+        elif name == "get_group":
+            return ConstantVariable.create(self.value.get_group())
+
+        return super().call_method(tx, name, args, kwargs)
 
 
 class ProcessGroupVariable(DistributedVariable):
