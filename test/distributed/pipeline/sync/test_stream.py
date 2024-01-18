@@ -21,9 +21,7 @@ from torch.distributed.pipeline.sync.stream import (
     use_stream,
     wait_stream,
 )
-from torch.testing._internal.common_utils import run_tests
-
-skip_if_no_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda required")
+from torch.testing._internal.common_utils import run_tests, requires_cuda
 
 
 class TestNewStream:
@@ -31,7 +29,7 @@ class TestNewStream:
         stream = new_stream(torch.device("cpu"))
         assert stream is CPUStream
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_new_stream_cuda(self):
         stream = new_stream(torch.device("cuda"))
         assert isinstance(stream, torch.cuda.Stream)
@@ -43,7 +41,7 @@ class TestCurrentStream:
         stream = current_stream(torch.device("cpu"))
         assert stream is CPUStream
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_current_stream_cuda(self):
         stream = current_stream(torch.device("cuda"))
         assert isinstance(stream, torch.cuda.Stream)
@@ -55,7 +53,7 @@ class TestDefaultStream:
         stream = default_stream(torch.device("cpu"))
         assert stream is CPUStream
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_default_stream_cuda(self):
         stream = default_stream(torch.device("cuda"))
         assert isinstance(stream, torch.cuda.Stream)
@@ -67,7 +65,7 @@ class TestUseDevice:
         with use_device(torch.device("cpu")):
             pass
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_use_device_cuda(self):
         with use_device(torch.device("cuda")):
             pass
@@ -78,7 +76,7 @@ class TestUseStream:
         with use_stream(CPUStream):
             pass
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_use_stream_cuda(self):
         stream = new_stream(torch.device("cuda"))
         with use_stream(stream):
@@ -89,7 +87,7 @@ class TestGetDevice:
     def test_get_device_cpu(self):
         assert get_device(CPUStream).type == "cpu"
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_get_device_cuda(self):
         stream = current_stream(torch.device("cuda"))
         assert get_device(stream).type == "cuda"
@@ -112,19 +110,19 @@ class TestWaitStream:
         target = CPUStream
         self._test_wait_stream(source, target)
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_wait_stream_cpu_cuda(self, cuda_sleep):
         source = CPUStream
         target = new_stream(torch.device("cuda"))
         self._test_wait_stream(source, target, cuda_sleep)
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_wait_stream_cuda_cpu(self, cuda_sleep):
         source = new_stream(torch.device("cuda"))
         target = CPUStream
         self._test_wait_stream(source, target, cuda_sleep)
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_wait_stream_cuda_cuda(self, cuda_sleep):
         source = current_stream(torch.device("cuda"))
         target = new_stream(torch.device("cuda"))
@@ -137,7 +135,7 @@ class TestRecordStream:
         x = torch.rand(1, device=torch.device("cpu"))
         record_stream(x, CPUStream)
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_record_stream_cuda(self, cuda_sleep):
         # This test detects unexpected block reallocation. For reliable test,
         # the stream to allocate tensors is isolated. The allocator will not
@@ -167,7 +165,7 @@ class TestRecordStream:
             z = torch.rand(1, device=torch.device("cuda"))
         assert z.data_ptr() == data_ptr
 
-    @skip_if_no_cuda
+    @requires_cuda
     def test_record_stream_shifted_view(self, cuda_sleep):
         # Issue: https://github.com/pytorch/pytorch/issues/27366
         stream_alloc = new_stream(torch.device("cuda"))

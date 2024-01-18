@@ -4,10 +4,7 @@ import unittest
 
 import torch._dynamo
 from torch._dynamo.test_minifier_common import MinifierTestBase
-
-requires_cuda = functools.partial(
-    unittest.skipIf, not torch.cuda.is_available(), "requires cuda"
-)
+from torch.testing._internal.common_utils import requires_cuda
 
 
 class MinifierTests(MinifierTestBase):

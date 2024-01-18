@@ -34,7 +34,7 @@ from torch._dynamo.debug_utils import same_two_models
 from torch._dynamo.testing import CompileCounter, rand_strided, same
 from torch.nn import functional as F
 from torch.testing._internal.common_utils import (
-    disable_translation_validation_if_dynamic_shapes,
+    disable_translation_validation_if_dynamic_shapes, requires_cuda,
 )
 
 
@@ -44,11 +44,6 @@ _orig_module_call = torch.nn.Module.__call__
 lib = torch.library.Library("test_sample", "DEF")
 lib.define("foo(Tensor self) -> Tensor")
 lib.impl("foo", torch.sin, "CPU")
-
-
-requires_cuda = functools.partial(
-    unittest.skipIf, not torch.cuda.is_available(), "requires cuda"
-)
 
 
 _GLOBAL_CPU_TENSOR = torch.randn(3)

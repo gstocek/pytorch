@@ -14,10 +14,10 @@ from torch.distributed.pipeline.sync import Pipe
 from torch.distributed.pipeline.sync.skip import pop, skippable, stash
 from torch.distributed.pipeline.sync.skip.portal import PortalBlue, PortalCopy, PortalOrange
 from torch.distributed.pipeline.sync.utils import partition_model
-from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import run_tests, requires_cuda
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda required")
+@requires_cuda
 @pytest.mark.parametrize("balance", [[3], [1, 2], [2, 1], [1, 1, 1]], ids=["3", "1:2", "2:1", "1:1:1"])
 @pytest.mark.parametrize("checkpoint", ["never", "always", "except_last"])
 def test_1to3(balance, checkpoint, setup_rpc):

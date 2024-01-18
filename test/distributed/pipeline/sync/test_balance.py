@@ -14,9 +14,8 @@ from torch import nn
 
 from torch.distributed.pipeline.sync._balance import balance_by_size, balance_by_time, blockpartition
 from torch.distributed.pipeline.sync._balance.profile import layerwise_sandbox
-from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import run_tests, requires_cuda
 
-skip_if_no_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda required")
 
 devices = ["cpu"]
 if torch.cuda.is_available():
@@ -75,7 +74,7 @@ def test_balance_by_time_loop_resets_input():
     assert balance == [1, 2]
 
 
-@skip_if_no_cuda
+@requires_cuda
 def test_balance_by_size_latent():
     class Expand(nn.Module):
         def __init__(self, times):
@@ -98,7 +97,7 @@ def test_balance_by_size_latent():
     assert balance == [2, 4]
 
 
-@skip_if_no_cuda
+@requires_cuda
 def test_balance_by_size_param():
     model = nn.Sequential(*[nn.Linear(i + 1, i + 2) for i in range(6)])
     sample = torch.rand(7, 1)
@@ -111,7 +110,7 @@ def test_balance_by_size_param():
     assert balance == [2, 4]
 
 
-@skip_if_no_cuda
+@requires_cuda
 def test_balance_by_size_param_scale():
     class Tradeoff(nn.Module):
         def __init__(self, param_size, latent_size):
@@ -202,7 +201,7 @@ def test_balance_by_time_tuple():
     balance_by_time(1, model, sample, device="cpu")
 
 
-@skip_if_no_cuda
+@requires_cuda
 def test_balance_by_size_tuple():
     class Twin(nn.Module):
         def forward(self, x):

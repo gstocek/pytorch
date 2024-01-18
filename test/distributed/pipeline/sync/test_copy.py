@@ -11,9 +11,7 @@ import torch
 
 from torch.distributed.pipeline.sync.copy import Copy, Wait
 from torch.distributed.pipeline.sync.stream import CPUStream, current_stream, get_device, is_cuda, new_stream, use_stream
-from torch.testing._internal.common_utils import run_tests
-
-skip_if_no_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda required")
+from torch.testing._internal.common_utils import run_tests, requires_cuda
 
 
 def _test_copy_wait(prev_stream, next_stream, cuda_sleep=None):
@@ -40,21 +38,21 @@ def test_copy_wait_cpu_cpu():
     _test_copy_wait(prev_stream, next_stream)
 
 
-@skip_if_no_cuda
+@requires_cuda
 def test_copy_wait_cpu_cuda(cuda_sleep):
     prev_stream = CPUStream
     next_stream = current_stream(torch.device("cuda"))
     _test_copy_wait(prev_stream, next_stream, cuda_sleep)
 
 
-@skip_if_no_cuda
+@requires_cuda
 def test_copy_wait_cuda_cpu(cuda_sleep):
     prev_stream = current_stream(torch.device("cuda"))
     next_stream = CPUStream
     _test_copy_wait(prev_stream, next_stream, cuda_sleep)
 
 
-@skip_if_no_cuda
+@requires_cuda
 def test_copy_wait_cuda_cuda(cuda_sleep):
     prev_stream = current_stream(torch.device("cuda"))
     next_stream = new_stream(torch.device("cuda"))

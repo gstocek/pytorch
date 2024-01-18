@@ -12,10 +12,10 @@ import torch
 from torch.distributed.pipeline.sync.dependency import fork, join
 from torch.distributed.pipeline.sync.skip.portal import Portal
 from torch.distributed.pipeline.sync.stream import default_stream
-from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import run_tests, requires_cuda
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda required")
+@requires_cuda
 def test_copy_returns_on_next_device():
     portal = Portal(torch.rand(1), tensor_life=1)
 

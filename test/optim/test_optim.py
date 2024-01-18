@@ -23,6 +23,7 @@ from torch.testing._internal.common_utils import (
     TestCase,
     load_tests,
     gradcheck,
+    requires_cuda,
     skipIfRocm,
     skipIfTorchDynamo
 )
@@ -1358,7 +1359,7 @@ class TestOptim(TestCase):
                 )
 
 
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA is required.")
+    @requires_cuda
     def test_fused_optimizer_load_state_dict(self):
         # NOTE: This SIMULATES a fused/capturable optimizer with state moved to CPU, issue 103256
         # How do we get there? Users typically create CUDA models on fused optimizers and then

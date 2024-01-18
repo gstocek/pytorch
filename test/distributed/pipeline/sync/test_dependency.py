@@ -12,10 +12,10 @@ import pytest
 import torch
 
 from torch.distributed.pipeline.sync.dependency import Fork, Join, fork, join
-from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import run_tests, requires_cuda
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda required")
+@requires_cuda
 def test_fork_join():
     logs = []
 

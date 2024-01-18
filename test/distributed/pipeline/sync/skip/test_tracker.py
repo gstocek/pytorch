@@ -18,7 +18,7 @@ from torch.distributed.pipeline.sync.microbatch import Batch
 from torch.distributed.pipeline.sync.skip import pop, skippable, stash
 from torch.distributed.pipeline.sync.skip.layout import SkipLayout
 from torch.distributed.pipeline.sync.skip.tracker import SkipTracker, SkipTrackerThroughPotals, current_skip_tracker
-from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import run_tests, requires_cuda
 
 
 def test_default_skip_tracker():
@@ -37,7 +37,7 @@ def test_default_skip_tracker():
     assert type(skip_tracker) is not SkipTrackerThroughPotals
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda required")
+@requires_cuda
 def test_default_skip_tracker_by_data_parallel():
     @skippable(stash=["foo"])
     class Stash(nn.Module):
