@@ -1171,7 +1171,7 @@ def _broadcast_to_and_flatten(
 
     if _is_leaf(tree, is_leaf=is_leaf):
         return [tree] * treespec.num_leaves
-    if isinstance(treespec, LeafSpec):
+    if treespec.is_leaf():
         return None
     node_type = _get_node_type(tree)
     if node_type != treespec.type:
@@ -1220,7 +1220,7 @@ _SUPPORTED_PROTOCOLS: Dict[int, _ProtocolFn] = {}
 
 
 def _treespec_to_json(treespec: TreeSpec) -> _TreeSpecSchema:
-    if isinstance(treespec, LeafSpec):
+    if treespec.is_leaf():
         return _TreeSpecSchema(None, None, [])
 
     if treespec.type not in SUPPORTED_SERIALIZED_TYPES:
@@ -1261,7 +1261,7 @@ def _json_to_treespec(json_schema: DumpableContext) -> TreeSpec:
         and json_schema["context"] is None
         and len(json_schema["children_spec"]) == 0
     ):
-        return LeafSpec()
+        return _LEAF_SPEC
 
     if json_schema["type"] not in SERIALIZED_TYPE_TO_PYTHON_TYPE:
         raise NotImplementedError(
